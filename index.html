@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#10182b">
+<meta name="description" content="완전 오프라인 플레이를 지원하는 판타지 보스전 지뢰찾기 게임">
+<title>MINE QUEST · 지뢰의 전설</title>
+<link rel="icon" type="image/webp" href="assets/mine.webp">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="world-background" aria-hidden="true"></div>
+<canvas id="effects" aria-hidden="true"></canvas>
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand" aria-label="MINE QUEST: 지뢰의 전설"><img src="assets/logo.webp" alt="MINE QUEST"/><div class="brand-caption">잃어버린 왕국의 지뢰를 해제하고, 보스를 쓰러뜨려라.</div></div>
+    <div class="top-controls">
+      <label>게임 모드<select id="modeSelect"><option value="adventure">⚔ 모험 / 보스전</option><option value="boss">🔥 보스 러시</option><option value="classic">◈ 클래식 지뢰찾기</option></select></label>
+      <label>난이도<select id="difficultySelect"><option value="beginner">초급 · 9×9</option><option value="intermediate">중급 · 16×16</option><option value="expert">고급 · 30×16</option></select></label>
+      <button id="newGame" class="btn btn-main"><span>↻</span> 새 전투</button>
+      <button id="helpButton" class="btn btn-quiet" title="도움말" aria-label="도움말">?</button>
+      <button id="soundButton" class="btn btn-quiet" title="효과음" aria-label="효과음 켜기/끄기">♫</button>
+    </div>
+  </header>
+  <section class="statbar" aria-label="게임 정보">
+    <div class="stat"><span class="stat-icon">◷</span><div><small>경과 시간</small><strong id="timer">00:00</strong></div></div>
+    <div class="stat"><img src="assets/mine.webp" alt=""/><div><small>남은 지뢰</small><strong id="minesRemaining">012</strong></div></div>
+    <div class="stat"><img src="assets/crown.webp" alt=""/><div><small>획득 점수</small><strong id="score">0</strong></div></div>
+    <div class="stat"><span class="stat-icon lightning">ϟ</span><div><small>연속 콤보</small><strong id="combo">×1</strong></div></div>
+    <div class="stat"><img src="assets/clock.webp" alt=""/><div><small>최고 점수</small><strong id="best">0</strong></div></div>
+  </section>
+  <main class="game-layout">
+    <aside class="sidebar sidebar-left">
+      <section class="panel hero-panel">
+        <div class="panel-heading"><span>THE EXPLORER</span><b id="heroLevel">LV. 01</b></div>
+        <div class="hero-layout"><div class="hero-frame"><img src="assets/hero.webp" alt="탐험하는 용사"/></div><div class="hero-info"><span class="hero-name">왕국의 지뢰 사냥꾼</span><div id="hearts" class="hearts" aria-label="용사의 체력"></div><div class="tiny-stat">보호막 <b id="shieldCount">0</b> / 에너지 <b id="energyValue">3</b></div><div class="energy-track"><span id="energyFill"></span></div></div></div>
+      </section>
+      <section class="panel skills-panel"><div class="panel-heading">스킬 & 전술 <small>숫자키 1–4</small></div>
+        <button class="skill" data-skill="scan"><img src="assets/eye.webp" alt=""/><span><b>1. 정밀 탐지</b><small>안전한 칸을 밝혀냅니다</small></span><em>3 ⚡</em></button>
+        <button class="skill" data-skill="shield"><img src="assets/shield.webp" alt=""/><span><b>2. 에너지 방패</b><small>다음 피해를 한 번 방어</small></span><em>4 ⚡</em></button>
+        <button class="skill" data-skill="disarm"><img src="assets/flag.webp" alt=""/><span><b>3. 자동 지뢰 해제</b><small>숨은 지뢰 하나에 깃발</small></span><em>5 ⚡</em></button>
+        <button class="skill" data-skill="freeze"><img src="assets/clock.webp" alt=""/><span><b>4. 시간 왜곡</b><small>보스 공격 10초 정지</small></span><em>6 ⚡</em></button>
+        <div class="skill-note">안전한 칸을 열고 지뢰를 정확히 표시하면 에너지가 충전됩니다.</div>
+      </section>
+      <section class="panel instructions"><div class="panel-heading">조작 가이드</div><p><b>왼쪽 클릭</b> 칸 열기 · <b>오른쪽 클릭</b> 깃발</p><p><b>숫자 재클릭</b> 주변 연속 열기</p><p><b>모바일</b> 길게 누르거나 깃발 모드</p><p><b>단축키</b> F 깃발 · R 재시작 · P 일시정지</p></section>
+    </aside>
+    <section class="board-section">
+      <div class="board-header"><div><div class="eyebrow" id="stageLabel">STAGE 01 · 숲의 부름</div><h1 id="stageName">에메랄드의 숲</h1><p id="objective">모든 안전한 칸을 밝혀내세요.</p></div><div class="board-actions"><button id="flagMode" class="btn btn-flag" aria-pressed="false"><img src="assets/flag.webp" alt=""/> 깃발 모드 <b id="flagModeText">OFF</b></button><button id="pauseButton" class="btn btn-quiet" title="일시정지">Ⅱ</button></div></div>
+      <div id="notification" class="notification" role="status" aria-live="polite">첫 번째 칸은 항상 안전합니다. 탐험을 시작하세요!</div>
+      <div class="board-outer"><div id="boardScroller" class="board-scroller"><div id="board" class="board" role="grid" aria-label="지뢰찾기 게임판"></div></div><div class="board-decoration" aria-hidden="true"><span>✦</span><span>✦</span><span>✦</span></div></div>
+      <div class="board-footer"><div><span class="dot-green"></span><strong id="openStatus">안전 칸 0 / 0</strong></div><div id="specialStatus">💠 탐험 준비 완료</div><div id="pauseStatus">FIRST CLICK SAFE</div></div>
+      <section class="stage-strip"><div class="stage-strip-title"><b>왕국 원정 지도</b><small>스테이지를 클리어하여 다음 지역 해금</small></div><div class="stage-cards" id="stageCards"></div></section>
+    </section>
+    <aside class="sidebar sidebar-right">
+      <section class="panel boss-panel"><div class="panel-heading"><span id="bossTitle">BOSS · 숲의 수호자</span><span class="boss-status" id="bossStatus">대기 중</span></div><div class="boss-art"><img id="bossPortrait" src="assets/stage-1.webp" alt="스테이지 보스"/><div class="boss-aurora"></div><div class="boss-name" id="bossName">에메랄드 골렘</div></div><div class="hp-heading"><span>보스 체력</span><b id="bossHpText">0 / 0</b></div><div class="hp-track"><div id="bossHpFill"></div></div><p class="boss-hint" id="bossHint">칸을 열고 지뢰를 정확히 표시하면 보스에게 피해를 줍니다.</p><div class="threat" id="threat"><img src="assets/bolt.webp" alt=""/><span id="threatText">보스는 전투 시작 후 공격합니다.</span></div></section>
+      <section class="panel objective-panel"><div class="panel-heading">전투 임무</div><div class="quest"><img src="assets/eye.webp" alt=""/><span>안전 칸 탐색</span><b id="questReveal">0 / 0</b></div><div class="quest"><img src="assets/flag.webp" alt=""/><span>정확한 깃발</span><b id="questFlags">0</b></div><div class="quest"><img src="assets/sword.webp" alt=""/><span>보스 피해량</span><b id="questDamage">0</b></div></section>
+      <section class="panel journal-panel"><div class="panel-heading">실시간 전투 로그</div><div id="journal" class="journal" aria-live="polite"><p>🗺️ 왕국의 문이 열렸습니다.</p></div></section>
+      <section class="panel legend-panel"><div class="panel-heading">아케이드 보너스</div><p>⚔ 연속해서 안전한 칸을 열면 <b>콤보 상승</b></p><p>💥 위험 칸에 표시를 성공하면 <b>보스 추가 피해</b></p><p>🎯 보스가 예고한 칸을 열면 <b>공격 무효화</b></p></section>
+    </aside>
+  </main>
+  <footer class="footer">MINE QUEST · OFFLINE EDITION <span>순수 HTML · CSS · JavaScript / 로컬 WebP / 외부 요청 0</span></footer>
+</div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-card"><div class="modal-shine"></div><img id="modalIcon" src="assets/crown.webp" alt=""/><div class="eyebrow" id="modalEyebrow">QUEST COMPLETE</div><h2 id="modalTitle">승리!</h2><div id="modalContent" class="modal-content"></div><div class="modal-buttons"><button id="modalSecondary" class="btn btn-quiet">닫기</button><button id="modalPrimary" class="btn btn-main">계속하기</button></div></div></div>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
